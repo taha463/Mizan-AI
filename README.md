@@ -6,6 +6,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-yellow?logo=python)](https://python.org)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch)](https://pytorch.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker)](https://docker.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
@@ -19,23 +20,39 @@ Standard LLMs reason by **statistical pattern matching** — they predict what t
 - **Ingests** case PDFs and shreds them into structured witness testimony blocks
 - **Deploys** three specialized agents to extract temporal, spatial, and testimonial anchors
 - **Arbitrates** using a custom RAT block — four parallel interpretation heads that actively compute cross-witness contradictions via cross-attention
-- **Outputs** a structured critique: what each witness establishes, what is missing, and where logical friction exists
+- **Outputs** a structured forensic critique: what each witness establishes, what is missing, and where logical friction exists
 
 ---
 
 ## 🔍 The Problem It Solves
 
-Pakistani courts — and judicial systems worldwide — face a critical bottleneck: junior advocates and clerks must manually cross-reference dozens of witness statements for internal consistency before a case reaches the bench. Errors at this stage (missed contradictions, undetected alibi impossibilities) can result in wrongful convictions or acquittals.
+Pakistani courts — and judicial systems worldwide — face a critical bottleneck: junior advocates and clerks must manually cross-reference dozens of witness statements for internal consistency before a case reaches the bench. Errors at this stage — missed contradictions, undetected alibi impossibilities — can result in wrongful convictions or acquittals.
 
 Mizan automates this forensic pre-screening. It doesn't decide guilt or innocence — it maps the **logical terrain** of the evidence, surfacing contradictions that a human reviewer might miss under time pressure.
 
 ---
 
+## 🖥️ System UI & Experience
+
+Explore the Mizan AI interface and core forensic arbitration workflows:
+
+| Hero Interface | Methodology Logic |
+| :---: | :---: |
+| ![Hero](HeroSection.png) | ![Methodology](MethodologySection.png) |
+
+| Sign-in Workflow | Workspace Arbitration |
+| :---: | :---: |
+| ![Signin](Signin.png) | ![Workspace](Workspace.png) |
+
+*Visual overview of the Mizan AI dashboard, showcasing the forensic workspace and arbitration logic flow.*
+
+---
+
 ## 🏗️ Architecture
 
-### System Flow
+### RAT Injection into Mistral-7B
 
-```
+```mermaid
 ---
 config:
   layout: fixed
@@ -89,7 +106,7 @@ flowchart TB
 
 ### RAT Block — Deep Dive
 
-The Reflective Arbitration Transformer is injected **at layer 12** of the Mistral backbone (the midpoint of the network, where semantic representations are richest before the final generation layers).
+The Reflective Arbitration Transformer is injected **at layer 12** of the Mistral backbone — the midpoint of the network, where semantic representations are richest before the final generation layers.
 
 | Component | Role |
 |---|---|
@@ -110,7 +127,7 @@ The RAT signal is added to the backbone via a **residual connection with α=0.05
 The ingestion layer converts unstructured legal PDFs into clean, machine-readable testimony blocks.
 
 - **Normalization:** Strips headers, footers, and OCR artifacts
-- **Semantic Segmentation:** Context-aware paragraph splitting (no mid-sentence truncation)
+- **Semantic Segmentation:** Context-aware paragraph splitting — no mid-sentence truncation
 - **Binary Stream Processing:** `BytesIO` in-memory handling — no disk I/O, files never written to disk in plaintext
 
 ### 2. The Three-Agent Pipeline
@@ -125,11 +142,11 @@ Three specialized agents map raw text to forensic requirements:
 
 ### 3. The RAT Block
 
-See architecture section above. The key innovation: instead of simply generating the next token, the model is forced to run its internal representations through a cross-attention contradiction engine before the final generation layers can proceed.
+The key innovation: instead of simply generating the next token, the model is forced to run its internal representations through a cross-attention contradiction engine **before** the final generation layers can proceed. See the architecture diagram above.
 
 ### 4. FastAPI Orchestration Layer
 
-- **Sliding Window Memory:** Maintains a session-specific `Case Record` (the ingested document) + rotating conversation history — fits any case length within the model's context window
+- **Sliding Window Memory:** Maintains a session-specific `Case Record` + rotating conversation history — fits any case length within the model's context window
 - **Hybrid Inference Bootstrapping:** Auto-detects GPU (CUDA) on startup. Falls back to a deterministic evidence-mapper mode in CPU environments — the system never crashes, even on a laptop
 - **CORS + FormData Security:** Async multipart ingestion pipeline; case files are shredded and arbitrated within seconds
 
@@ -153,15 +170,25 @@ See architecture section above. The key innovation: instead of simply generating
 
 **Test case:** Two witnesses with a structural alibi impossibility — PW-1 claims the suspect fled north through the marketplace gate at 11:30 PM; PW-2 (the gate guard) states no one passed north between 11:15–11:45 PM and heard no gunfire.
 
-**Base Mistral output (rat_alpha=0.0):**
-> The main contradiction lies in the time frame... This contradiction raises the question of whether the suspect could have passed through the gate undetected or whether PW-1's account is inaccurate... Further investigation is required.
+**🔴 Base Mistral output (`rat_alpha=0.0`):**
+```
+The main contradiction lies in the time frame... This contradiction raises the question
+of whether the suspect could have passed through the gate undetected or whether PW-1's
+account is inaccurate... Further investigation is required.
+```
+*Identifies the contradiction but frames it as a general question — no forensic resolution pathway.*
 
-*(Identifies the contradiction but frames it as a general question, offers no forensic resolution pathway)*
-
-**Mizan RAT output:**
-> PW-1 establishes visual + auditory observation from a fixed vantage point with documented illumination. PW-2's security log creates a hard spatial impossibility: if the gate was the only northern exit and no one passed, the suspect could not have taken the stated route. The absence of gunfire in PW-2's statement compounds this — either the "blast" was sub-acoustic at that distance, or PW-1's timeline is displaced by ≥15 minutes. CCTV verification of gate logs and acoustic analysis of the courtyard geometry are the priority investigation vectors.
-
-*(Identifies the exact contradiction type — spatial impossibility + acoustic discrepancy — and prescribes specific investigative actions)*
+**🟢 Mizan RAT output:**
+```
+PW-1 establishes visual + auditory observation from a fixed vantage point with documented
+illumination. PW-2's security log creates a hard spatial impossibility: if the gate was
+the only northern exit and no one passed, the suspect could not have taken the stated
+route. The absence of gunfire in PW-2's statement compounds this — either the "blast"
+was sub-acoustic at that distance, or PW-1's timeline is displaced by ≥15 minutes.
+CCTV verification of gate logs and acoustic analysis of the courtyard geometry are the
+priority investigation vectors.
+```
+*Classifies the exact contradiction type — spatial impossibility + acoustic discrepancy — and prescribes specific investigative actions.*
 
 ---
 
@@ -169,32 +196,64 @@ See architecture section above. The key innovation: instead of simply generating
 
 | Layer | Technology |
 |---|---|
-| **Base Model** | Mistral-7B-Instruct-v0.2 (4-bit quantized via BnB) |
+| **Base Model** | Mistral-7B-Instruct-v0.2 (4-bit quantized via BitsAndBytes) |
 | **Fine-tuning** | Unsloth + LoRA (r=16, α=32, 7 target modules) |
-| **Custom Architecture** | PyTorch 2.x — RAT block, GRUCell, MultiheadAttention |
+| **Custom Architecture** | PyTorch 2.x — RATBlock, GRUCell, MultiheadAttention |
 | **Inference Optimization** | `torch.amp.autocast` (FP16), top-p nucleus sampling |
 | **API Layer** | FastAPI, async/await, CORS middleware |
 | **Frontend** | React (Vite) |
+| **Containerization** | Docker + Docker Compose |
 | **Training Environment** | Kaggle (P100/T4 GPU) |
 | **Document Processing** | PyMuPDF / `BytesIO` streaming |
 
 ---
 
-🚀 How To Run
+## 🚀 How To Run
+
 The Mizan AI system is fully containerized using Docker for environment consistency.
 
-1. Clone the repository:
-   git clone https://github.com/taha463/Mizan-AI.git
-   cd Mizan-AI
+### Prerequisites
 
-2. Launch the full stack:
-   docker-compose up --build
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- [Git](https://git-scm.com/) installed
 
-3. Access the system:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
+### Build & Launch
 
-*Note: Ensure Docker Desktop is running before launching.*
+**1. Clone the repository:**
+```bash
+git clone https://github.com/taha463/Mizan-AI.git
+cd Mizan-AI
+```
+
+**2. Launch the full stack:**
+```bash
+docker-compose up --build
+```
+
+**3. Access the system:**
+
+| Service | URL |
+|---|---|
+| 🖥️ Frontend | http://localhost:3000 |
+| ⚙️ Backend API | http://localhost:8000 |
+| 📖 API Docs | http://localhost:8000/docs |
+
+> **Note:** Ensure Docker Desktop is running before executing `docker-compose up`.
+
+### Without Docker (Manual Setup)
+
+```bash
+# Backend
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+
+# Frontend (new terminal)
+cd frontend
+npm install
+npm run dev
+```
+
 ---
 
 ## 📓 Training Notebook
@@ -208,22 +267,25 @@ Full training pipeline, dataset preparation, loss curves, and ablation experimen
 ## 📁 Project Structure
 
 ```
-mizan-ai/
+Mizan-AI/
 ├── backend/
-│   ├── main.py               # FastAPI server + orchestration layer
-│   ├── ingestion.py          # PDF shredder (BytesIO pipeline)
+│   ├── main.py                  # FastAPI server + orchestration layer
+│   ├── ingestion.py             # PDF shredder (BytesIO pipeline)
 │   ├── agents/
 │   │   ├── testimony_agent.py
 │   │   ├── temporal_agent.py
 │   │   └── spatial_agent.py
 │   └── rat_model/
-│       ├── architecture.py   # RATBlock, MistralRAT, all submodules
-│       └── generate.py       # Inference engine with top-p sampling
+│       ├── architecture.py      # RATBlock, MistralRAT, all submodules
+│       └── generate.py          # Inference engine with top-p sampling
 ├── frontend/
-│   └── src/                  # React/Vite UI
-├── checkpoints/              # Trained model weights (not in repo)
-├── diagrams/
-│   └── rat_architecture.svg  # RAT injection diagram
+│   └── src/                     # React/Vite UI
+├── checkpoints/                 # Trained model weights (not tracked in git)
+├── HeroSection.png
+├── MethodologySection.png
+├── Signin.png
+├── Workspace.png
+├── docker-compose.yml
 └── README.md
 ```
 
@@ -237,15 +299,15 @@ Most legal AI tools are RAG wrappers — they retrieve relevant laws and feed th
 
 2. **Reflection before generation.** The GRU cell iterates over the contradiction signal before the final transformer layers run, giving the model a form of structured "second-guessing" absent in standard autoregressive models.
 
-3. **Domain-grounded agents.** The three-agent pipeline converts unstructured testimony into structured forensic anchors *before* the LLM ever sees the text — reducing the chance of hallucination by providing the model with pre-verified spatial and temporal scaffolding.
+3. **Domain-grounded agents.** The three-agent pipeline converts unstructured testimony into structured forensic anchors *before* the LLM ever sees the text — reducing hallucination risk by providing pre-verified spatial and temporal scaffolding.
 
 ---
 
 ## 👤 Author
 
-**Muhammad Taha**
-Software Engineering, HITEC University Taxila
-[Kaggle](https://www.kaggle.com/muhammadtaha167) · [GitHub](https://github.com/muhammadtaha167)
+**Muhammad Taha**  
+Software Engineering, HITEC University Taxila  
+[Kaggle](https://www.kaggle.com/muhammadtaha167) · [GitHub](https://github.com/taha463)
 
 ---
 
