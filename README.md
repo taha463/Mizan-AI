@@ -256,14 +256,6 @@ npm run dev
 
 ---
 
-## 📓 Training Notebook
-
-Full training pipeline, dataset preparation, loss curves, and ablation experiments are available on Kaggle:
-
-**[🔗 View Training Notebook on Kaggle](https://www.kaggle.com/code/muhammadtaha167/notebook36951c361)**
-
----
-
 ## 📁 Project Structure
 
 ```
